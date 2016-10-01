@@ -37,21 +37,59 @@
 
 	<!-- spring和MyBatis完美整合，不需要mybatis的配置映射文件 -->
 	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="configLocation" value="classpath:com/qk/practice/mapping/SqlMapConfig.xml"></property>  
 		<property name="dataSource" ref="dataSource" />
 		<!-- 自动扫描mapping.xml文件 -->
-		<property name="mapperLocations" value="classpath:com/qk/practice/mapping/*.xml"></property>
+		<property name="mapperLocations" value="classpath:com/qk/practice/mapping/*Ibatis.xml"></property>
 	</bean>
 
 	<!-- DAO接口所在包名，Spring会自动查找其下的类 -->
 	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
-		<property name="basePackage" value="my.demo.dao" />
+		<property name="basePackage" value="com.qk.practice.dao" />
 		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"></property>
 	</bean>
 
-	<!-- (事务管理)transaction manager, use JtaTransactionManager for global tx -->
+	<!-- (事务管理)transaction manager -->
 	<bean id="transactionManager"
 		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
 		<property name="dataSource" ref="dataSource" />
 	</bean>
+	
+	<!-- 定义拦截器，用来指定事物属性，级别，和异常处理 -->  
+    <bean id="transactionInterceptor" class="org.springframework.transaction.interceptor.TransactionInterceptor">  
+        <property name="transactionManager" ref="transactionManager"></property>  
+        <property name="transactionAttributes">  
+            <props>  
+                <!-- PROPAGATION_SUPPORTS: 如果已经存在事务,则加入事务;如果没有事务,则以非事务的方式执行;   
+                PROPAGATION_MANDATORY: 使用当前事务, 如果没有, 则抛出异常;   
+                PROPAGATION_REQUIRED: 新建事务,如果当前有事务, 则挂起; P  
+                ROPAGATION_NOT_SUPPORTED:以非事务的方式执行, 如果当前有事务, 则挂起;   
+                PROPAGATION_NEVER:以非事务的方式执行, 如果当前有事务,则抛出异常;   
+                +/-Exception</prop> + 表示异常出现时事物提交 - 表示异常出现时事务回滚 -->  
+                <prop key="find*">PROPAGATION_SUPPORTS,readOnly</prop>  
+                <prop key="get*">PROPAGATION_SUPPORTS,readOnly</prop>  
+                <prop key="select*">PROPAGATION_SUPPORTS,readOnly</prop>
+                <prop key="load*">PROPAGATION_SUPPORTS,readOnly</prop>  
+                <prop key="del*"> PROPAGATION_SUPPORTS</prop>  
+                <prop key="update*">PROPAGATION_REQUIRED,-Exception</prop>  
+                <prop key="save*">PROPAGATION_REQUIRED,-Exception</prop>  
+                <prop key="add*">PROPAGATION_REQUIRED,-Exception</prop>  
+                <prop key="insert*">PROPAGATION_REQUIRED,-Exception</prop>  
+            </props>  
+        </property>  
+    </bean>  
+    <!-- 用来定义那些类需要采用事物管理 spring 事物的动态代理类 BeanNameAutoProxyCreator 根据类名自动代理，接受表达式 -->  
+    <bean id="BeanProxy" class="org.springframework.aop.framework.autoproxy.BeanNameAutoProxyCreator">  
+        <property name="beanNames">  
+            <!-- 对类名以MybatisService结尾的类进行代理 -->  
+            <value>*Service</value>  
+        </property>  
+        <!-- 对代理类进行加载拦截器(实现通知的过程) -->  
+        <property name="interceptorNames">  
+            <list>  
+                <value>transactionInterceptor</value>  
+            </list>  
+        </property>  
+    </bean>  
 
 </beans>  
