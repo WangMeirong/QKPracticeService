@@ -28,7 +28,7 @@ public class PracticeServiceTest {
 //	}
 
 	@Test
-	public void test1() {
+	public void test1() throws Exception{
 		Practice p = practiceService.getPracticeById("f396c64c-865b-11e6-89fa-e03f4931fd4d");
 //		p.setCode("practice_test4");
 //		practiceService.updatePracticeById(p);

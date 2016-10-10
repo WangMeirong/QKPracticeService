@@ -41,20 +41,20 @@ CREATE UNIQUE INDEX `name_UNIQUE` ON `qk_practice`.`subject` (`name` ASC);
 SHOW WARNINGS;
 
 -- -----------------------------------------------------
--- Table `qk_practice`.`anwser`
+-- Table `qk_practice`.`answer`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `qk_practice`.`anwser` ;
+DROP TABLE IF EXISTS `qk_practice`.`answer` ;
 
 SHOW WARNINGS;
-CREATE TABLE IF NOT EXISTS `qk_practice`.`anwser` (
-  `anwser_id` VARCHAR(45) NOT NULL,
-  `anwser` VARCHAR(500) NOT NULL,
+CREATE TABLE IF NOT EXISTS `qk_practice`.`answer` (
+  `answer_id` VARCHAR(45) NOT NULL,
+  `answer` VARCHAR(500) NOT NULL,
   `attachment` VARCHAR(500) NULL,
   `is_delete` VARCHAR(1) NULL DEFAULT 'N',
   `created_time` BIGINT(20) NOT NULL,
   `last_modified_by` VARCHAR(45) NOT NULL,
   `last_modified_time` BIGINT(20) NOT NULL,
-  PRIMARY KEY (`anwser_id`))
+  PRIMARY KEY (`answer_id`))
 ENGINE = InnoDB;
 
 SHOW WARNINGS;
@@ -93,7 +93,7 @@ SHOW WARNINGS;
 CREATE TABLE IF NOT EXISTS `qk_practice`.`practice` (
   `practice_id` VARCHAR(45) NOT NULL,
   `subject_id` VARCHAR(45) NULL,
-  `anwser_id` VARCHAR(45) NOT NULL,
+  `answer_id` VARCHAR(45) NOT NULL,
   `code` VARCHAR(30) NULL,
   `title` VARCHAR(100) NOT NULL,
   `description` LONGTEXT NULL,
@@ -110,9 +110,9 @@ CREATE TABLE IF NOT EXISTS `qk_practice`.`practice` (
     REFERENCES `qk_practice`.`subject` (`subject_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
-  CONSTRAINT `fk_practice_anwser_id`
-    FOREIGN KEY (`anwser_id`)
-    REFERENCES `qk_practice`.`anwser` (`anwser_id`)
+  CONSTRAINT `fk_practice_answer_id`
+    FOREIGN KEY (`answer_id`)
+    REFERENCES `qk_practice`.`answer` (`answer_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_practice_status_id`
@@ -129,7 +129,7 @@ SHOW WARNINGS;
 CREATE INDEX `fk_subject_id_idx` ON `qk_practice`.`practice` (`subject_id` ASC);
 
 SHOW WARNINGS;
-CREATE INDEX `fk_anwser_id_idx` ON `qk_practice`.`practice` (`anwser_id` ASC);
+CREATE INDEX `fk_answer_id_idx` ON `qk_practice`.`practice` (`answer_id` ASC);
 
 SHOW WARNINGS;
 CREATE UNIQUE INDEX `code_UNIQUE` ON `qk_practice`.`practice` (`code` ASC);
@@ -284,7 +284,7 @@ CREATE TABLE IF NOT EXISTS `qk_practice`.`practice_instance` (
   `exam_instance_id` VARCHAR(45) NULL,
   `practice_id` VARCHAR(45) NULL,
   `user_id` VARCHAR(45) NOT NULL,
-  `anwser` VARCHAR(500) NULL,
+  `answer` VARCHAR(500) NULL,
   `score` INT NULL DEFAULT 0,
   `attachment` VARCHAR(100) NULL,
   `status_id` VARCHAR(45) NOT NULL,

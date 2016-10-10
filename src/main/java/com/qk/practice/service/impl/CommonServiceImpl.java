@@ -12,16 +12,16 @@ import com.qk.practice.model.Status;
 import com.qk.practice.service.ICommonService;
 
 @Service("commonService")
-public class CommonService implements ICommonService{
+public class CommonServiceImpl implements ICommonService{
 	
-	private static Logger logger = Logger.getLogger(CommonService.class);
+	private static Logger logger = Logger.getLogger(CommonServiceImpl.class);
+
 	@Resource
 	private ICommonDao commonDao;
-
+	
 	@Override
 	public List<Status> getAllStatus() {
 		return commonDao.getAllStatus();
 	}
-	
 
 }

@@ -14,7 +14,7 @@ public class CacheBeanPostProcessor implements BeanPostProcessor {
 		logger.info("===Bean intialization: " + beanName);
 		try {  
             if(bean instanceof CommonTimer) {   
-            	((CommonTimer)bean).loadStatusCache();
+            	((CommonTimer)bean).loadCache();
             }
         } catch (Exception e) {  
              e.printStackTrace();  

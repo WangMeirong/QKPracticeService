@@ -6,4 +6,5 @@ import com.qk.practice.model.Status;
 
 public interface ICommonDao {
 	public List<Status> getAllStatus();
+	
 }
