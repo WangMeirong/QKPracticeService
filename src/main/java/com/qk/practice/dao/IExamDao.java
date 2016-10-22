@@ -4,20 +4,56 @@ import java.util.List;
 
 import com.qk.practice.model.Exam;
 import com.qk.practice.model.ExamPractice;
+import com.qk.practice.model.ExamTag;
 
 public interface IExamDao {
 
-	public Exam getExamById(String examId);
+	/**
+	 * get Exam by examId.
+	 * @param examId
+	 * @return
+	 * @throws Exception
+	 */
+	public Exam getExamById(String examId) throws Exception;
 	
-	public List<Exam> getExams(Exam exam);
+	/**
+	 * get Exams
+	 * @param exam
+	 * @return
+	 * @throws Exception
+	 */
+	public List<Exam> getExams(Exam exam) throws Exception;
 	
-	public int deleteExamPracitcesByExamId(String examId);
+	public List<Exam> getAllExams() throws Exception;
 	
-	public int updateExamById(String examId);
+	public List<ExamTag> getExamTagsByExamId(String examId) throws Exception;
 	
-	public int insertExam(Exam exam);
+	public List<ExamPractice> getExamPracticeByExamId(String examId) throws Exception;
 	
-	public int insertExamPractice(ExamPractice examPractice);
+	public int deleteExamById(Exam exam) throws Exception;
 	
-	public int insertExamPractices(List<ExamPractice> epList);
+	public int deleteExamsById(List<Exam> exams) throws Exception;
+	
+	public int deleteExamPracticesByExamId(ExamPractice examPractice) throws Exception;
+	
+	public int deleteExamPracticeByPracticeId(ExamPractice examPractice) throws Exception;
+	
+	public int deleteExamTagsByExamId(ExamTag examTag) throws Exception;
+	
+	public int updateExamById(Exam exam) throws Exception;
+	
+	public int updateExamPractices(List<ExamPractice> examPractices) throws Exception;
+	
+	public int updateExamTags(List<ExamTag> examTags) throws Exception;
+	
+	public int insertExam(Exam exam) throws Exception;
+	
+	public int insertExamPractice(ExamPractice examPractice) throws Exception;
+	
+	public int insertExamPractices(List<ExamPractice> epList) throws Exception;
+	
+	public int insertExamTag(ExamTag examTag) throws Exception;
+	
+	public int insertExamTags(List<ExamTag> examTags) throws Exception;
+	
 }

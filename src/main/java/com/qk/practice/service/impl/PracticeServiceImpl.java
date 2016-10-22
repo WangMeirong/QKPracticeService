@@ -5,19 +5,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Resource;
-
 import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.qk.practice.common.AllCaches;
+import com.qk.practice.common.CacheProcessor;
 import com.qk.practice.common.Constant;
 import com.qk.practice.common.SubjectEnum;
 import com.qk.practice.dao.IAnswerDao;
 import com.qk.practice.dao.IPracticeDao;
 import com.qk.practice.dao.IPracticeInstanceDao;
 import com.qk.practice.dao.ISubjectDao;
-import com.qk.practice.model.Answer;
 import com.qk.practice.model.Practice;
 import com.qk.practice.model.PracticeInstance;
 import com.qk.practice.model.PracticeTag;
@@ -27,22 +25,19 @@ import com.qk.practice.util.UUIDGenerator;
 import com.qk.practice.util.Utils;
 
 @Service("practiceService")
-public class PracticeServiceImpl implements IPracticeService{
+public class PracticeServiceImpl implements IPracticeService {
 
 	private static Logger logger = Logger.getLogger(PracticeServiceImpl.class);
 
-	@Resource
+	@Autowired
 	private IPracticeDao practiceDao;
-	
-	@Resource
+	@Autowired
 	private IPracticeInstanceDao practiceInstanceDao;
-	
-	@Resource
+	@Autowired
 	private IAnswerDao answerDao;
-	
-	@Resource
+	@Autowired
 	private ISubjectDao subjectDao;
-	
+
 	@Override
 	public Practice getPracticeById(String practiceId) throws Exception {
 		Practice practice = practiceDao.getPracticeById(practiceId);
@@ -51,7 +46,7 @@ public class PracticeServiceImpl implements IPracticeService{
 
 	@Override
 	public List<Practice> getPractices(Practice practice) throws Exception {
-		if(null == practice){
+		if (null == practice) {
 			return practiceDao.getAllPractices();
 		}
 		return practiceDao.getPractices(practice);
@@ -64,38 +59,44 @@ public class PracticeServiceImpl implements IPracticeService{
 			logger.debug("===Can't be inserted because Practice is null.");
 			return Constant.FAILURE;
 		}
-		
+
+		String lastModifiedBy = practice.getLastModifiedBy();
+
 		logger.debug("===Start to insert Answer.");
-		if (null == practice.getAnswer()){
+		if (null == practice.getAnswer()) {
 			logger.debug("===Can't be inserted because Answer is null.");
 		} else {
 			practice.getAnswer().setAnswerId(UUIDGenerator.getNewUUID());
+			practice.getAnswer().setLastModifiedBy(lastModifiedBy);
 			answerDao.insertAnswer(practice.getAnswer());
-			logger.debug("===Inserted because Answer: " + practice.getAnswer().getAnswerId());
+			logger.debug("===Inserted Answer: "
+					+ practice.getAnswer().getAnswerId());
 		}
-		
+
 		logger.debug("===Start to insert Subject.");
 		if (Utils.isEmpty(practice.getSubjectId())) {
 			// set a default subject
 			logger.debug("===Set TBD as default subject because of no Subject specified.");
-			practice.setSubjectId(AllCaches.CACHE_SUBJECT.get(SubjectEnum.TBD.getName()));
+			practice.setSubjectId(CacheProcessor.CACHE_SUBJECT
+					.get(SubjectEnum.TBD.name()));
 		}
-		
+
 		logger.debug("===Start to insert Practice.");
 		String practiceId = UUIDGenerator.getNewUUID();
 		practice.setPracticeId(practiceId);
+		practice.setCode(practiceId + "-" + practice.getTitle());
 		practiceDao.insertPractice(practice);
 		logger.debug("===Inserted Practice: " + practiceId);
-		
+
 		logger.debug("===Start to insert Practice Tag.");
-		if (null == practice.getTags() || practice.getTags().isEmpty()){
-			logger.debug("===Can't be inserted because Tags is null.");
+		if (Utils.isEmpty(practice.getTags())) {
+			logger.debug("===Can't be inserted Practice Tag because Tags is null.");
 		} else {
 			List<PracticeTag> ptList = new ArrayList<PracticeTag>();
 			for (Tag tag : practice.getTags()) {
 				PracticeTag pt = new PracticeTag();
 				pt.setIsDelete(Constant.NO);
-				pt.setLastModifiedBy(practice.getLastModifiedBy());
+				pt.setLastModifiedBy(lastModifiedBy);
 				pt.setPracticeId(practiceId);
 				pt.setTagId(tag.getTagId());
 				pt.setPracticeTagId(UUIDGenerator.getNewUUID());
@@ -104,7 +105,7 @@ public class PracticeServiceImpl implements IPracticeService{
 			practiceDao.insertPracticeTags(ptList);
 		}
 		logger.debug("===Inserted Practice Tags.");
-		
+
 		logger.info("===End to insert Practice.");
 		return Constant.SUCCESS;
 	}
@@ -113,47 +114,44 @@ public class PracticeServiceImpl implements IPracticeService{
 	public String deletePractice(Practice practice) throws Exception {
 		logger.info("===Start to delete Practice.");
 		// delete practice tag
-		PracticeTag pt = new PracticeTag();
-		pt.setLastModifiedBy(practice.getLastModifiedBy());
-		pt.setPracticeId(practice.getPracticeId());
-		practiceDao.deletePracticeTagById(pt);
-		logger.debug("===Deleted PracticeTag with practiceId: " + practice.getPracticeId());
-		
-		// delete answer
-		Answer answer = practice.getAnswer();
-		if (null == answer) {
-			answer = new Answer();
-			answer.setAnswerId(practice.getAnswerId());
-			answer.setLastModifiedBy(practice.getLastModifiedBy());
-		} else {
-			answer.setLastModifiedBy(practice.getLastModifiedBy());
+		if (null == practice) {
+			logger.debug("===Can't be delete because practice is null.");
+			return Constant.FAILURE;
 		}
-		answerDao.deleteAnswerById(answer);
-		logger.debug("===Deleted Answer with practiceId: " + practice.getPracticeId());
-		
-		// delete practice
 		practiceDao.deletePracticeById(practice);
-		logger.debug("===Deleted Practice with practiceId: " + practice.getPracticeId());
-		
+
 		logger.info("===End to delete Practice.");
+		return Constant.SUCCESS;
+	}
+
+	@Override
+	public String deletePractices(String practiceIds, String lastModifiedBy)
+			throws Exception {
+		if (Utils.isEmpty(practiceIds.trim())) {
+			logger.debug("===Can't be delete because practiceIds is null.");
+			return Constant.FAILURE;
+		}
+		logger.info("===Start to delete Practices by practiceIds:" + practiceIds);
+		String[] ids = practiceIds.split(",");
+		List<Practice> ps = new ArrayList<Practice>();
+		for (String id : ids) {
+			Practice p = new Practice();
+			p.setPracticeId(id.trim());
+			p.setLastModifiedBy(lastModifiedBy);
+			ps.add(p);
+		}
+		practiceDao.deletePracticesById(ps);
+		logger.info("===End to delete Practices.");
 		return Constant.SUCCESS;
 	}
 
 	@Override
 	public String updatePractice(Practice practice) throws Exception {
 		logger.info("===Start update Practice.");
+
 		// update practice tag
-		List<Tag> tags = practice.getTags();
-		if (null != tags && !tags.isEmpty()){
-			List<PracticeTag> pts = practiceDao.getPracticeTagsById(practice.getPracticeId());
-			for (Tag tag : tags) {
-				PracticeTag pt = new PracticeTag();
-				pt.setPracticeId(practice.getPracticeId());
-				pt.setTagId(tag.getTagId());
-				pt.setLastModifiedBy(practice.getLastModifiedBy());
-				pts.add(pt);
-			}
-			updatePracticeTag(pts);
+		if (!Utils.isEmpty(practice.getTags())) {
+			updatePracticeTag(practice);
 		} else {
 			// delete all practice tag for the practice
 			PracticeTag pt = new PracticeTag();
@@ -161,25 +159,30 @@ public class PracticeServiceImpl implements IPracticeService{
 			pt.setLastModifiedBy(practice.getLastModifiedBy());
 			practiceDao.deletePracticeTagById(pt);
 		}
-		logger.debug("===Completed PracticeTag update with practiceId: " + practice.getPracticeId());
-		
+		logger.debug("===Completed PracticeTag update with practiceId: "
+				+ practice.getPracticeId());
+
 		// update answer
-		if(null != practice.getAnswer()) {
-			practice.getAnswer().setLastModifiedBy(practice.getLastModifiedBy());
+		if (null != practice.getAnswer()) {
+			practice.getAnswer()
+					.setLastModifiedBy(practice.getLastModifiedBy());
 			answerDao.updateAnswerById(practice.getAnswer());
-			logger.debug("===Completed Answer update with practiceId: " + practice.getPracticeId());
+			logger.debug("===Completed Answer update with practiceId: "
+					+ practice.getPracticeId());
 		}
-		
+
 		// update practice
 		practiceDao.updatePracticeById(practice);
-		logger.debug("===Completed Practice update with practiceId: " + practice.getPracticeId());
-		
+		logger.debug("===Completed Practice update with practiceId: "
+				+ practice.getPracticeId());
+
 		logger.info("===End update Practice.");
 		return Constant.SUCCESS;
 	}
 
 	@Override
-	public String insertPracticeInstance(PracticeInstance practiceInstance) throws Exception {
+	public String insertPracticeInstance(PracticeInstance practiceInstance)
+			throws Exception {
 		logger.info("===Start insert PracticeInstance.");
 		if (null == practiceInstance) {
 			logger.debug("===Can't be inserted because PracticeInstance is null.");
@@ -188,71 +191,96 @@ public class PracticeServiceImpl implements IPracticeService{
 		logger.debug("===Insert Practice Instance.");
 		practiceInstance.setPracticeInstanceId(UUIDGenerator.getNewUUID());
 		practiceInstanceDao.insertPracticeInstance(practiceInstance);
-		
+
 		logger.info("===End insert PracticeInstance.");
 		return Constant.SUCCESS;
 	}
 
 	@Override
-	public String updatePracticeInstance(PracticeInstance practiceInstance) throws Exception {
+	public String updatePracticeInstance(PracticeInstance practiceInstance)
+			throws Exception {
 		logger.info("===Start update PracticeInstance.");
 		if (null == practiceInstance) {
 			logger.debug("===Can't be updated because PracticeInstance is null.");
 			return Constant.FAILURE;
 		}
 		practiceInstanceDao.updatePracticeInstanceById(practiceInstance);
-		logger.debug("===Updated Practice Instance: " + practiceInstance.getPracticeId());
-		
+		logger.debug("===Updated Practice Instance: "
+				+ practiceInstance.getPracticeId());
+
 		logger.info("===End update PracticeInstance.");
 		return Constant.SUCCESS;
 	}
-	
+
 	/**
-	 * Update PracticeTag with same practiceId
-	 * @param pts List<PracticeTag>
+	 * Update PracticeTag
+	 * 
+	 * @param Practice
+	 *            practice
 	 * @return SUCCESS or FAILURE
 	 */
-	private String updatePracticeTag(List<PracticeTag> pts) throws Exception {
+	private String updatePracticeTag(Practice practice) throws Exception {
 		logger.info("===Start update PracticeTag.");
-		if(Utils.isEmpty(pts)) {
-			return Constant.FAILURE;
-		}
-		String practiceId = pts.get(0).getPracticeId();
-		List<PracticeTag> beforeUpdatePts = practiceDao.getPracticeTagsById(practiceId);
-		Map<String, PracticeTag> beforeUpdatePtsMap = getPracticeTagMap(beforeUpdatePts);
-		List<PracticeTag> addPts = new ArrayList<PracticeTag>();
-		List<PracticeTag> updatePts = new ArrayList<PracticeTag>();
-		for (PracticeTag temp : pts) {
-			if(null == beforeUpdatePtsMap.get(temp.getTagId())){
-				addPts.add(temp);
-			} else {
-				if(beforeUpdatePtsMap.get(temp.getTagId()).getIsDelete().equals(Constant.YES)) {
-					temp.setIsDelete(Constant.NO);
-					updatePts.add(temp);
-				}
-				beforeUpdatePtsMap.remove(temp.getTagId());
-			}
-		}
-		// the rest practice tag needs be deleted.
-		if (beforeUpdatePtsMap.size() != 0) {
-			for(String temp : beforeUpdatePtsMap.keySet()) {
-				PracticeTag pt = beforeUpdatePtsMap.get(temp);
-				if(pt.getIsDelete().equals(Constant.NO)){
-					pt.setIsDelete(Constant.YES);
-					updatePts.add(pt);
-				}
+		List<Tag> tags = practice.getTags();
+		List<PracticeTag> pts = new ArrayList<PracticeTag>();
+		for (Tag tag : tags) {
+			if (!Utils.isEmpty(tag.getTagId())) {
+				PracticeTag pt = new PracticeTag();
+				pt.setPracticeId(practice.getPracticeId());
+				pt.setTagId(tag.getTagId());
+				pt.setLastModifiedBy(practice.getLastModifiedBy());
+				pt.setIsDelete(Constant.NO);
+				pts.add(pt);
 			}
 		}
 
-		practiceDao.updatePracticeTags(updatePts);
-		practiceDao.insertPracticeTags(addPts);
+		String practiceId = practice.getPracticeId();
+		List<PracticeTag> beforeUpdatePts = practiceDao
+				.getPracticeTagsById(practiceId);
+		List<PracticeTag> addPts = new ArrayList<PracticeTag>();
+		List<PracticeTag> updatePts = new ArrayList<PracticeTag>();
+		if (Utils.isEmpty(beforeUpdatePts)) {
+			addPts.addAll(pts);
+		} else {
+			Map<String, PracticeTag> beforeUpdatePtsMap = getPracticeTagMap(beforeUpdatePts);
+			for (PracticeTag temp : pts) {
+				if (null == beforeUpdatePtsMap.get(temp.getTagId())) {
+					temp.setPracticeTagId(UUIDGenerator.getNewUUID());
+					addPts.add(temp);
+				} else {
+					if (beforeUpdatePtsMap.get(temp.getTagId()).getIsDelete()
+							.equals(Constant.YES)) {
+						updatePts.add(temp);
+					}
+					beforeUpdatePtsMap.remove(temp.getTagId());
+				}
+			}
+			// the rest practice tag needs be deleted.
+			if (beforeUpdatePtsMap.size() != 0) {
+				for (String temp : beforeUpdatePtsMap.keySet()) {
+					PracticeTag pt = beforeUpdatePtsMap.get(temp);
+					if (pt.getIsDelete().equals(Constant.NO)) {
+						pt.setIsDelete(Constant.YES);
+						pt.setLastModifiedBy(practice.getLastModifiedBy());
+						updatePts.add(pt);
+					}
+				}
+			}
+		}
+		if (!Utils.isEmpty(updatePts)) {
+			practiceDao.updatePracticeTags(updatePts);
+		}
+		if (!Utils.isEmpty(addPts)) {
+			practiceDao.insertPracticeTags(addPts);
+		}
 		logger.info("===End update PracticeTag.");
 
 		return Constant.SUCCESS;
 	}
-	
+
 	/**
 	 * Get map of <tagId, practiceTag>
+	 * 
 	 * @param pts
 	 * @return map <tagId, practiceTag>
 	 */
@@ -261,9 +289,10 @@ public class PracticeServiceImpl implements IPracticeService{
 			return null;
 		}
 		Map<String, PracticeTag> ptMap = new HashMap<String, PracticeTag>();
-		for(PracticeTag temp : pts) {
+		for (PracticeTag temp : pts) {
 			ptMap.put(temp.getTagId(), temp);
 		}
 		return ptMap;
 	}
+
 }

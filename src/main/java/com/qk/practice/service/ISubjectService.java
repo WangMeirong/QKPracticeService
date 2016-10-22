@@ -6,6 +6,6 @@ import com.qk.practice.model.Subject;
 
 public interface ISubjectService {
 	
-	public List<Subject> getAllSubjects();
+	public List<Subject> getAllSubjects() throws Exception;
 
 }

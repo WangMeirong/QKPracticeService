@@ -1,6 +1,7 @@
 package com.qk.practice.dao;
 
 import java.util.List;
+import java.util.Map;
 
 import org.apache.ibatis.annotations.Param;
 
@@ -46,13 +47,19 @@ public interface IPracticeDao {
 	public int deletePracticeById(Practice practice) throws Exception;
 	
 	/**
+	 * Delete Practices by practiceId.
+	 * @param ps
+	 * @return
+	 * @throws Exception
+	 */
+	public int deletePracticesById(List<Practice> ps) throws Exception;
+	
+	/**
 	 * Delete PracticeTag by practiceId.
 	 * @param practiceTag
 	 * @return
 	 */
 	public int deletePracticeTagById(PracticeTag practiceTag) throws Exception;
-	
-	//public int deletePracticeTags(List<PracticeTag> practiceTags);
 	
 	/**
 	 * Update Practice by practiceId.
@@ -62,7 +69,7 @@ public interface IPracticeDao {
 	public int updatePracticeById(@Param("practice")Practice practice) throws Exception;
 	
 	/**
-	 * Update PracticeTag, mainly update is_delete.
+	 * Update PracticeTag by practiceId and tagId, mainly update is_delete.
 	 * @param practiceTags
 	 * @return
 	 */

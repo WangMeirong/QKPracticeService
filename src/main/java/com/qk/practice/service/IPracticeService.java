@@ -41,6 +41,15 @@ public interface IPracticeService {
 	public String deletePractice(Practice practice) throws Exception;
 	
 	/**
+	 * Delete Practice by practiceId.
+	 * @param practiceIds
+	 * @param lastModifiedBy
+	 * @return
+	 * @throws Exception
+	 */
+	public String deletePractices(String practiceIds, String lastModifiedBy) throws Exception;
+	
+	/**
 	 * Update Practice(contain PracticeTag, Answer).
 	 * @param pratice
 	 * @return

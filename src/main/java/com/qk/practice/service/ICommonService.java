@@ -7,6 +7,6 @@ import com.qk.practice.model.Status;
 
 public interface ICommonService {
 	
-	public List<Status> getAllStatus();
+	public List<Status> getAllStatus() throws Exception;
 	
 }

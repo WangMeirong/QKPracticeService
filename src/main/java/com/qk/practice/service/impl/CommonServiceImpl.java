@@ -21,6 +21,7 @@ public class CommonServiceImpl implements ICommonService{
 	
 	@Override
 	public List<Status> getAllStatus() {
+		logger.debug("===Get All Status.");
 		return commonDao.getAllStatus();
 	}
 
